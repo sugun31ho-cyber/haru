@@ -293,39 +293,28 @@
   const ORANGE = '#E07B3A';
   const DEFAULT_DOT = '#5B8EE8';
   const TODO_COUNT = 7;
-  const GAS_URL = 'https://script.google.com/macros/s/AKfycby4nTFjN0WxWrO02rrGan4agmMwSHwPMPLEROIdgyvvJYNSH-PdyV53OYzB-9pjBHFt/exec';
+  const STORAGE_KEY = 'haru_todos';
 
   function emptyTodos() {
     return Array.from({length: TODO_COUNT}, () => ({ text: '', state: 0, color: '#1a1a1a' }));
   }
 
-  // Google Sheets에서 불러오기
-  async function loadTodos() {
+  function loadTodos() {
     try {
-      const res = await fetch(GAS_URL);
-      const text = await res.text();
-      const parsed = JSON.parse(text);
-      if (Array.isArray(parsed) && parsed.length === TODO_COUNT) return parsed;
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length === TODO_COUNT) return parsed;
+      }
     } catch(e) {}
     return emptyTodos();
   }
 
-  // Google Sheets에 저장 (debounce 적용)
-  let saveTimer = null;
   function saveTodos() {
-    clearTimeout(saveTimer);
-    saveTimer = setTimeout(async () => {
-      try {
-        await fetch(GAS_URL, {
-          method: 'POST',
-          body: JSON.stringify(todos),
-          headers: { 'Content-Type': 'application/json' }
-        });
-      } catch(e) {}
-    }, 800);
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(todos)); } catch(e) {}
   }
 
-  let todos = emptyTodos();
+  let todos = loadTodos();
   let openPalette = -1;
 
   let dragSrcIdx = -1;
@@ -545,12 +534,7 @@
 
   tick();
   setInterval(tick, 1000);
-
-  // Google Sheets에서 불러와서 렌더
-  loadTodos().then(data => {
-    todos = data;
-    renderTodos();
-  });
+  renderTodos();
 </script>
 </body>
 </html>
